@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="author" content="Anish Luitel">
+<title>The Half Layer · Choose your market</title>
+<style>/*__FONTS__*/</style>
+<style>
+:root{
+  --bg0:#040A1C;--ink:#E8F0FF;--mut:#8FA6D4;--dim:#5B72A3;
+  --line:rgba(130,180,255,.26);--line2:rgba(130,180,255,.12);
+  --glass:linear-gradient(180deg,rgba(70,120,215,.17),rgba(12,28,70,.42));
+  --orange:#FF9E2C;--green:#6FF0A6;--red:#FF6B7A;--blue:#6DB6FF;--violet:#B69CFF;
+  --cream:#F6F0E2;--gold:#E0B472;--copper:#C9805A;--crimson:#94384A;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{color:var(--ink);font:14px/1.55 var(--sans);background:var(--bg0);overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:-3;background:radial-gradient(ellipse 90% 70% at 50% 24%,#16346F 0%,#0C214D 42%,#040A1C 100%)}
+.glow{position:fixed;z-index:-2;width:60vw;height:60vw;left:20vw;top:-32vw;pointer-events:none;background:radial-gradient(closest-side,rgba(255,158,44,.12),transparent)}
+.floor{position:fixed;left:-30%;right:-30%;bottom:-8vh;height:58vh;z-index:-2;pointer-events:none;background-image:linear-gradient(rgba(109,182,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(109,182,255,.16) 1px,transparent 1px);background-size:64px 64px;transform:perspective(520px) rotateX(64deg);transform-origin:50% 100%;-webkit-mask-image:linear-gradient(to top,#000 0,transparent 92%);mask-image:linear-gradient(to top,#000 0,transparent 92%)}
+.hl{font-weight:700;letter-spacing:-.02em;line-height:1.05;color:transparent;background:linear-gradient(180deg,var(--cream) 0 49%,var(--gold) 52%,var(--copper) 72%,var(--crimson) 100%);-webkit-background-clip:text;background-clip:text;-webkit-mask:linear-gradient(#000,#000) top/100% 50% no-repeat,repeating-linear-gradient(180deg,#000 0 2px,transparent 2px 3.6px) bottom/100% 50% no-repeat;mask:linear-gradient(#000,#000) top/100% 50% no-repeat,repeating-linear-gradient(180deg,#000 0 2px,transparent 2px 3.6px) bottom/100% 50% no-repeat}
+.mono,.eyebrow,.chip,.btn,.k{font-family:var(--mono);font-feature-settings:"calt" 0,"liga" 0}
+
+/* ---- top bar ---- */
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;max-width:1180px;margin:0 auto;padding:max(18px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit}
+.brand img{height:42px;width:auto;filter:drop-shadow(0 0 10px rgba(255,158,44,.28))}
+.brand b{display:block;font:700 12px var(--mono);letter-spacing:.32em}
+.brand span{display:block;font:500 9px var(--mono);letter-spacing:.24em;color:var(--mut);margin-top:3px}
+.sp{flex:1}
+.chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px;border:1px dashed var(--line);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.chip.ok .dot{background:var(--green);box-shadow:0 0 9px var(--green)}.chip.ok{color:var(--ink);border-color:rgba(111,240,166,.4)}
+.chip.bad .dot{background:var(--red);box-shadow:0 0 9px var(--red)}.chip.bad{color:#FFC3CA;border-color:rgba(255,107,122,.5)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;height:38px;padding:0 18px;border-radius:10px;border:1px solid var(--line);background:rgba(10,25,64,.6);color:var(--ink);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;cursor:pointer;text-decoration:none;transition:.2s}
+.btn:hover{border-color:var(--blue);transform:translateY(-1px)}
+.btn.go{background:linear-gradient(180deg,#FFB052,#F08A1C);border-color:#FFB052;color:#1B0F00;box-shadow:0 8px 24px rgba(255,158,44,.28)}
+.btn.go:hover{box-shadow:0 12px 30px rgba(255,158,44,.45);border-color:#FFD08C}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+
+/* ---- hero ---- */
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(26px,5vw,56px) max(20px,env(safe-area-inset-right)) 110px max(20px,env(safe-area-inset-left))}
+.eyebrow{font-size:10px;letter-spacing:.34em;color:var(--orange);margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.eyebrow::after{content:"";height:1px;width:64px;background:linear-gradient(90deg,var(--orange),transparent)}
+h1{margin:0;font-size:clamp(40px,7.4vw,84px);text-transform:uppercase;text-wrap:balance}
+.lead{max-width:60ch;margin:16px 0 0;color:var(--mut);font-size:15px;line-height:1.65}
+
+/* ---- refresh drawer ---- */
+.drawer{display:none;margin-top:22px;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,158,44,.5);background:linear-gradient(180deg,rgba(255,158,44,.1),rgba(10,25,64,.5));animation:in .3s}
+.drawer.on{display:block}
+.drawer .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.drawer b{font:700 10px var(--mono);letter-spacing:.2em;color:var(--orange)}
+.bar{flex:1;min-width:140px;height:4px;border-radius:2px;background:rgba(130,180,255,.16);overflow:hidden}.bar i{display:block;height:100%;width:30%;background:var(--orange);animation:slide 1.4s infinite ease-in-out}
+.drawer.done .bar i{animation:none;width:100%;background:var(--green)}.drawer.err .bar i{animation:none;width:100%;background:var(--red)}
+@keyframes slide{0%{margin-left:-30%}100%{margin-left:100%}}
+.log{margin:10px 0 0;max-height:120px;overflow:auto;padding:9px 11px;border-radius:8px;background:rgba(4,10,28,.6);border:1px solid var(--line2);font:11px/1.5 var(--mono);color:var(--mut);white-space:pre-wrap}
+
+/* ---- market cards ---- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:26px;margin-top:clamp(28px,4vw,46px)}
+.card{position:relative;display:flex;flex-direction:column;gap:18px;min-width:0;padding:22px 22px 20px;border-radius:16px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 18px 50px rgba(0,0,0,.4);color:inherit;text-decoration:none;transition:transform .25s,border-color .25s,box-shadow .25s;animation:in .5s both}
+.card:nth-child(2){animation-delay:.08s}.card:nth-child(3){animation-delay:.16s}
+.card::before{content:"";position:absolute;left:-1px;top:-1px;width:18px;height:18px;border-left:2px solid var(--blue);border-top:2px solid var(--blue);border-top-left-radius:16px}
+.card::after{content:"";position:absolute;inset:9px -9px -9px 9px;border:1px solid var(--line2);border-radius:16px;z-index:-1;background:linear-gradient(180deg,rgba(70,120,215,.06),transparent);transition:.25s}
+a.card:hover{transform:translateY(-4px);border-color:var(--orange);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 24px 60px rgba(0,0,0,.5),0 0 34px rgba(255,158,44,.18)}
+a.card:hover::after{inset:13px -13px -13px 13px;border-color:rgba(255,158,44,.35)}
+@keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.ch{display:flex;align-items:flex-start;gap:14px}
+.ico{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:#0A1A44;border:1.5px solid var(--orange);box-shadow:0 0 0 4px rgba(255,158,44,.1),0 0 22px rgba(255,158,44,.4);color:var(--orange)}
+.ico svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ch h2{margin:0;font-size:clamp(30px,4.4vw,44px);text-transform:uppercase}
+.ch p{margin:4px 0 0;color:var(--mut);font-size:13px}
+.ch .ccy{margin-left:auto;align-self:flex-start;font:700 11px var(--mono);letter-spacing:.18em;padding:4px 9px;border-radius:7px;border:1px solid var(--line);color:var(--ink);background:rgba(10,25,64,.6)}
+.mid{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:18px;align-items:center}
+.spark{width:100%;height:92px;display:block}
+.gauge{position:relative;text-align:center}
+.gauge svg{width:128px;height:76px;display:block}
+.gauge .v{position:absolute;left:0;right:0;top:32px;font:700 21px var(--mono)}
+.gauge .l{font:700 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;margin-top:-2px}
+.gauge .s{font:500 9px var(--mono);letter-spacing:.14em;color:var(--mut);text-transform:uppercase;margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;border-radius:10px;overflow:hidden;border:1px solid var(--line2);background:var(--line2)}
+.stats div{padding:9px 11px;background:rgba(7,18,50,.78);min-width:0}
+.k{display:block;font-size:8.5px;letter-spacing:.2em;color:var(--mut);text-transform:uppercase;margin-bottom:3px}
+.stats b{display:block;font:600 13px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--orange)}
+.cf{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:auto}
+.cf .age{font:500 10px var(--mono);letter-spacing:.08em;color:var(--mut);display:flex;align-items:center;gap:7px}
+.age .dot{background:var(--green);box-shadow:0 0 8px var(--green)}.age.stale .dot{background:var(--orange);box-shadow:0 0 8px var(--orange)}.age.old .dot{background:var(--red)}
+.cf .btn.go{margin-left:auto}.btn.mini{height:32px;padding:0 12px;font-size:10px}.btn.mini:disabled{opacity:.45}
+
+/* ---- add-your-own card ---- */
+.card.new{border-style:dashed;background:linear-gradient(180deg,rgba(70,120,215,.06),rgba(12,28,70,.2));box-shadow:none}
+.card.new::before,.card.new::after{display:none}
+.card.new{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;gap:22px 34px}.card.new .ch{flex:1 1 300px}.card.new ol{flex:1 1 380px}
+.card.new h2{font-size:24px}
+.card.new .ch p{max-width:56ch}.card.new .ch p code{font:11.5px var(--mono);color:var(--orange);background:rgba(255,158,44,.1);padding:1px 6px;border-radius:5px}
+.addbox{flex:1 1 380px;min-width:0}.addrow{display:flex;gap:8px}.addrow input{flex:1;min-width:0;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:rgba(4,10,28,.6);color:var(--ink);font:600 13px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.addrow input:focus{outline:2px solid var(--orange);border-color:transparent}
+.asr{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-top:6px;border-radius:9px;border:1px solid var(--line);background:rgba(10,25,64,.5)}.asr>div{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}.asr b{font:700 12px var(--mono);color:var(--orange)}.asr em{font-style:normal;font:11px var(--mono);color:var(--mut)}.asr.bad{border-color:rgba(255,107,122,.45)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.wch{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;border-radius:999px;border:1px solid rgba(255,158,44,.45);background:rgba(255,158,44,.08);font-size:12px}.wch b{font:700 11px var(--mono);color:var(--orange)}.wch button{border:0;background:none;color:var(--mut);cursor:pointer;font-size:11px;padding:2px 4px}.wch button:hover{color:var(--red)}
+.note{font-size:11px;color:var(--mut);letter-spacing:.04em;margin-top:6px}
+.card.new ol{margin:0;padding-left:20px;color:var(--mut);font-size:13px;line-height:1.8}
+.card.new code{font:11.5px var(--mono);color:var(--orange);background:rgba(255,158,44,.1);padding:1px 6px;border-radius:5px}
+
+/* ---- info row ---- */
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin-top:34px}
+.tile{padding:14px 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(10,25,64,.4);min-width:0}
+.tile h3{margin:0 0 6px;font:700 9.5px var(--mono);letter-spacing:.22em;color:var(--orange);text-transform:uppercase}
+.tile p{margin:0;color:var(--mut);font-size:12.5px;line-height:1.6}
+.tile code{font:11px var(--mono);color:var(--ink);word-break:break-all}
+
+/* ---- signature ---- */
+.sig{position:fixed;left:max(16px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));z-index:5;text-decoration:none;color:inherit;display:grid;grid-template-columns:auto 1fr;column-gap:9px;align-items:center;padding:7px 12px 8px 9px;border-radius:12px;border:1px solid var(--line);background:rgba(8,20,54,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.sig img{grid-row:1/3;height:28px;width:auto}
+.sig .a{font:600 8px var(--mono);letter-spacing:.24em;color:var(--mut)}.sig .b{font-size:16px;white-space:nowrap}
+.sig .ly{grid-column:1/3;display:flex;flex-direction:column;gap:2px;margin-top:5px}.sig .ly i{display:block;height:2px;border-radius:1px}
+.empty{padding:34px 20px;text-align:center;border-radius:16px;border:1px dashed var(--line);color:var(--mut);grid-column:1/-1}
+.empty b{display:block;font-size:22px;margin-bottom:8px;color:var(--ink)}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.mid{grid-template-columns:minmax(0,1fr) 112px}.gauge svg{width:112px}.cf .btn.go{width:100%;margin-left:0;order:3}.wrap{padding-bottom:96px}.sig{padding:5px 9px 6px}.sig .b{font-size:14px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<script>/*__LOCK__*/</script>
+<div class="bg"></div><div class="glow"></div><div class="floor"></div>
+
+<header class="top">
+  <a class="brand" href="/home" aria-label="The Half Layer home"><img src="__LOGO__" alt=""><div><b>THE HALF LAYER</b><span>MARKETS TERMINAL</span></div></a>
+  <div class="sp"></div>
+  <span class="chip" id="srv"><i class="dot"></i><span>Checking server…</span></span>
+  <button class="btn" id="rf" type="button" disabled><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>Rebuild all</button>
+</header>
+
+<main class="wrap">
+  <div class="eyebrow">LOCAL SERVER · LAUNCHER</div>
+  <h1 class="hl">Choose your market</h1>
+  <p class="lead">Pick the universe you want to study: charts, signals, risk, valuation, backtests and your own portfolio are inside.</p>
+
+  <div class="drawer" id="drawer" role="status"><div class="row"><b>REBUILDING</b><span id="dst" class="mono" style="font-size:12px"></span><div class="bar"><i></i></div></div><pre class="log" id="dlog"></pre></div>
+
+  <section class="cards" id="cards" aria-label="Dashboards"></section>
+
+  <section class="info">
+    <div class="tile"><h3>Data</h3><p>Prices, fundamentals and analyst ratings come from Yahoo Finance through <span class="mono">yfinance</span>. Refresh re-runs the notebook for the universe set in its CONFIG, so the other dashboard keeps its last build.</p></div>
+    <div class="tile"><h3>Your data</h3><p>Holdings, alerts and chart layout save in this browser. To keep them in a folder, start the server with <code>--state-dir</code> (works with Google Drive for desktop).</p><p style="margin-top:6px" class="mono" id="stateDir"></p></div>
+    <div class="tile"><h3>Keys</h3><p>Inside a dashboard: <span class="mono">/</span> jump to a ticker · <span class="mono">?</span> info mode · <span class="mono">1</span> to <span class="mono">9</span> switch pages. Click the logo to come back here.</p></div>
+  </section>
+</main>
+
+<a class="sig" href="/home" title="Developed by Anish Luitel"><img src="__LOGO__" alt=""><span class="a">DEVELOPED BY</span><b class="hl b">Anish Luitel</b><span class="ly"><i style="background:#F6F0E2"></i><i style="background:#E0B472"></i><i style="background:#C9805A"></i><i style="background:#94384A"></i></span></a>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id), hs = window.HL_SERVER || {}, TOKEN = hs.token || '';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const NAMES = {global: ['Global', 'World indices and global mega-caps, side by side in one currency.', 'globe'], canada: ['Canada', 'TSX blue-chips with world indices for context, in Canadian dollars.', 'leaf'], penny: ['Penny stocks', 'Stocks under 5, found live by Yahoo at every rebuild, with filters for strong buy and potential increase.', 'coin'], mega: ['Mega 110', 'The largest US, Canadian, European and Asian companies: 110 stocks, in US dollars.', 'layers']};
+const ICONS = {
+  globe: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>',
+  leaf: '<svg viewBox="0 0 24 24"><path d="M12 21v-6M12 15l-5 1 1-4-4-3 4-1-1-4 3 2 2-4 2 4 3-2-1 4 4 1-4 3 1 4z"/></svg>',
+  coin: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.2c-.5-.8-1.4-1.2-2.5-1.2-1.4 0-2.5.7-2.5 1.8 0 2.6 5 1.2 5 3.8 0 1.1-1.1 1.9-2.5 1.9-1.1 0-2.1-.5-2.6-1.4M12 6.5V8m0 8v1.5"/></svg>',
+  layers: '<svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>',
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  box: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 15l3-4 3 2 3-5"/></svg>'
+};
+const pct = (v, d = 1) => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '') + (v * 100).toFixed(d) + '%';
+const cls = v => v == null ? '' : v >= 0 ? 'pos' : 'neg';
+const ageH = g => { const t = Date.parse(String(g || '').replace(' ', 'T')); return isFinite(t) ? (Date.now() - t) / 36e5 : null; };
+const ageTxt = h => h == null ? 'build time unknown' : h < 1 ? 'built under an hour ago' : h < 48 ? 'built ' + Math.round(h) + ' h ago' : 'built ' + Math.round(h / 24) + ' days ago';
+
+function spark(pts) {
+  if (!pts || pts.length < 3) return '<svg class="spark" viewBox="0 0 300 92"></svg>';
+  const W = 300, H = 92, px = 4, py = 10, lo = Math.min(...pts), hi = Math.max(...pts), x = i => px + i / (pts.length - 1) * (W - 2 * px), y = v => H - py - (v - lo) / (hi - lo || 1) * (H - 2 * py);
+  const up = pts[pts.length - 1] >= pts[0], c = up ? '#6FF0A6' : '#FF6B7A', d = pts.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join('');
+  const id = 'g' + Math.random().toString(36).slice(2, 7);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Benchmark, last ${pts.length} points"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".34"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient></defs>
+    <g stroke="rgba(130,180,255,.12)" stroke-width="1">${[.25, .5, .75].map(f => `<line x1="0" x2="${W}" y1="${(H * f).toFixed(1)}" y2="${(H * f).toFixed(1)}"/>`).join('')}</g>
+    <path d="${d}L${x(pts.length - 1).toFixed(1)} ${H}L${x(0).toFixed(1)} ${H}Z" fill="url(#${id})"/><path d="${d}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${x(pts.length - 1).toFixed(1)}" cy="${y(pts[pts.length - 1]).toFixed(1)}" r="3.4" fill="${c}"/></svg>`;
+}
+function gauge(b, label) {
+  const f = b == null ? 0 : Math.max(0, Math.min(1, b)), c = label === 'Risk-on' ? '#6FF0A6' : label === 'Risk-off' ? '#FF6B7A' : '#FF9E2C';
+  return `<div class="gauge"><svg viewBox="0 0 120 70"><path d="M10 62A50 50 0 0 1 110 62" pathLength="100" fill="none" stroke="rgba(130,180,255,.2)" stroke-width="9" stroke-linecap="round"/><path d="M10 62A50 50 0 0 1 110 62" pathLength="100" fill="none" stroke="${c}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${f * 100} 100" style="filter:drop-shadow(0 0 5px ${c})"/></svg>
+    <div class="v">${b == null ? '–' : Math.round(f * 100) + '%'}</div><div class="l" style="color:${c}">${esc(label || 'n/a')}</div><div class="s">above 200-day</div></div>`;
+}
+function card(m) {
+  const key = String(m.universe || m.file.replace(/_market_dashboard\.html$/, '').replace(/\.html$/, '')).toLowerCase(), nm = NAMES[key] || [key.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), 'Your own list of indices and stocks.', 'box'];
+  const h = ageH(m.generated), ac = h == null ? '' : h > 72 ? 'old' : h > 20 ? 'stale' : '';
+  const base = m.base || String(m.currency || '').split('-')[0];
+  const sub = (m.n_indices != null ? `${m.n_indices} indices · ${m.n_stocks} stocks` : `${m.n_assets || ''} instruments`) + (m.is_sample ? ' · sample data' : '');
+  return `<a class="card" href="/${encodeURI(m.file)}" aria-label="Open the ${esc(nm[0])} dashboard">
+    <div class="ch"><span class="ico">${ICONS[nm[2]]}</span><div><h2 class="hl">${esc(nm[0])}</h2><p>${esc(nm[1])}</p><p class="mono" style="font-size:10.5px;letter-spacing:.1em;color:var(--dim)">${esc(sub.toUpperCase())}</p></div><span class="ccy">${esc(base)}</span></div>
+    <div class="mid">${spark(m.spark)}${gauge(m.breadth, m.regime)}</div>
+    <div class="stats"><div><span class="k">Instruments</span><b>${esc(m.n_assets != null ? m.n_assets : '–')}</b></div><div><span class="k">${esc(m.bench_name || 'Benchmark')} · 1M</span><b class="${cls(m.bench_1m)}">${pct(m.bench_1m)}</b></div><div><span class="k">YTD</span><b class="${cls(m.bench_ytd)}">${pct(m.bench_ytd)}</b></div><div><span class="k">Last price bar</span><b>${esc(m.last || '–')}</b></div></div>
+    <div class="cf"><span class="age ${ac}"><i class="dot"></i>${ageTxt(h)}</span><button type="button" class="btn mini" data-rb="${esc(key)}" title="Download fresh prices and rebuild only this dashboard">Rebuild</button><span class="btn go">Open dashboard <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div></a>`;
+}
+const newCard = () => `<div class="card new" id="addcard"><div class="ch"><span class="ico">${ICONS.plus}</span><div><h2 class="hl">Add any stock</h2><p>Type any Yahoo Finance symbol, for example <code>GOOGL</code>, <code>META</code>, <code>TD.TO</code> or <code>7203.T</code>. It joins every dashboard after a rebuild.</p></div></div>
+  <div class="addbox"><div class="addrow"><input id="asT" placeholder="GOOGL, META …" autocomplete="off" spellcheck="false" aria-label="Ticker symbols"><button class="btn go" id="asGo" type="button">Check</button></div><div id="asRes"></div>
+  <div class="k" style="margin-top:12px">YOUR ADDED STOCKS</div><div id="asList" class="chips"></div><div id="asNote" class="mono note"></div></div></div>`;
+let WL = [];
+const drawWL = () => {
+  const el = $('asList'); if (!el) return;
+  el.innerHTML = WL.length ? WL.map(x => `<span class="wch">${esc(x.name && x.name !== x.t ? x.name + ' · ' : '')}<b>${esc(x.t)}</b><button type="button" data-rm="${esc(x.t)}" aria-label="Remove ${esc(x.t)}">✕</button></span>`).join('') : '<span class="mono note">None yet.</span>';
+};
+const resRow = r => `<div class="asr${r.ok ? '' : ' bad'}" data-t="${esc(r.t)}"><div><b>${esc(r.t)}</b>${r.ok ? ` <span>${esc(r.name)}</span> <em>${esc([r.exchange, r.currency, r.price != null ? r.price.toLocaleString(undefined, {maximumFractionDigits: 2}) : ''].filter(Boolean).join(' · '))}</em>` : ` <em class="neg">${esc(r.error || 'not found')}</em>`}</div>${r.ok ? '<button type="button" class="btn mini go" data-add>Add</button>' : ''}</div>`;
+let FOUND = {};
+async function check() {
+  const syms = [...new Set($('asT').value.toUpperCase().split(/[\s,;]+/).filter(Boolean))].slice(0, 10), out = $('asRes'); if (!syms.length) return;
+  out.innerHTML = '<div class="mono note">Checking Yahoo Finance…</div>'; FOUND = {}; $('asGo').disabled = true;
+  const rs = await Promise.all(syms.map(t => getJSON('/api/lookup?t=' + encodeURIComponent(t)).catch(e => ({ok: false, t, error: e.message}))));
+  $('asGo').disabled = false; rs.forEach(r => FOUND[r.t] = r);
+  out.innerHTML = rs.map(resRow).join('') + (rs.filter(r => r.ok).length > 1 ? '<button type="button" class="btn mini go" data-addall style="margin-top:4px">Add all found</button>' : '');
+}
+async function saveWL(rows) {
+  try { const j = await getJSON('/api/watchlist', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-HL-Token': TOKEN}, body: JSON.stringify({add: rows.map(r => ({t: r.t, name: r.name, ccy: r.currency}))})}); WL = j.watchlist || WL; drawWL(); $('asRes').innerHTML = ''; $('asT').value = '';
+    $('asNote').textContent = 'Saved. Press Rebuild on a card (or Rebuild all) to download prices and see ' + (rows.length > 1 ? 'them' : rows[0].t) + ' in the charts.'; }
+  catch (e) { $('asNote').textContent = e.message; }
+}
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('#asGo')) check();
+  else if (t.closest('[data-addall]')) saveWL(Object.values(FOUND).filter(r => r.ok));
+  else if (t.closest('[data-add]')) saveWL([FOUND[t.closest('.asr').dataset.t]]);
+  else if (t.closest('.wch [data-rm]')) { const x = t.closest('[data-rm]').dataset.rm; getJSON('/api/watchlist', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-HL-Token': TOKEN}, body: JSON.stringify({remove: [x]})}).then(j => { WL = j.watchlist || []; drawWL(); $('asNote').textContent = 'Removed ' + x + '. Rebuild to update the dashboards.'; }).catch(() => {}); }
+  else if (t.closest('[data-rb]')) { e.preventDefault(); e.stopPropagation(); startRebuild([t.closest('[data-rb]').dataset.rb]); }
+}, true);
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'asT') check(); });
+
+async function getJSON(u, opt) { const r = await fetch(u, opt); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); return j; }
+async function load() {
+  try {
+    const [p, d, w] = await Promise.all([getJSON('/api/ping'), getJSON('/api/dashboards'), getJSON('/api/watchlist').catch(() => ({watchlist: []}))]); WL = w.watchlist || [];
+    const s = $('srv'); s.className = 'chip ok'; s.innerHTML = `<i class="dot"></i><span>Server online${p.yfinance ? ' · live data ready' : ' · yfinance missing'}</span>`; $('rf').disabled = !TOKEN;
+    $('stateDir').textContent = p.state_dir ? 'Saving to: ' + p.state_dir : '';
+    const list = d.dashboards || [];
+    $('cards').innerHTML = (list.length ? list.map(card).join('') : '<div class="empty"><b>No dashboards yet</b>Press Rebuild all to run the notebook and build the first one.</div>') + newCard(); drawWL();
+  } catch (e) {
+    const s = $('srv'); s.className = 'chip bad'; s.innerHTML = `<i class="dot"></i><span>Server not reachable</span>`;
+    $('cards').innerHTML = `<div class="empty"><b>Could not load the dashboards</b>${esc(e.message)}</div>`;
+  }
+}
+let poll = null;
+async function startRebuild(unis) {
+  const dr = $('drawer'), st = $('dst'), lg = $('dlog'); dr.className = 'drawer on'; lg.textContent = ''; st.textContent = 'starting…';
+  document.querySelectorAll('[data-rb],#rf').forEach(b => b.disabled = true); dr.scrollIntoView({behavior: 'smooth', block: 'center'});
+  const free = () => { $('rf').disabled = !TOKEN; document.querySelectorAll('[data-rb]').forEach(b => b.disabled = false); };
+  try { await getJSON('/api/refresh', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-HL-Token': TOKEN}, body: JSON.stringify({clear_cache: false, universes: unis || 'all'})}); }
+  catch (e) { dr.className = 'drawer on err'; st.textContent = e.message; free(); return; }
+  clearInterval(poll);
+  poll = setInterval(async () => {
+    try {
+      const j = await getJSON('/api/refresh/status'); lg.textContent = (j.log || []).slice(-10).join('\n'); lg.scrollTop = lg.scrollHeight;
+      st.textContent = j.state === 'running' ? 'running… ' + Math.round(j.elapsed) + ' s' : j.state === 'done' ? 'finished in ' + Math.round(j.elapsed) + ' s' : 'failed, see the log';
+      if (j.state === 'done') { clearInterval(poll); dr.className = 'drawer on done'; free(); load(); }
+      if (j.state === 'error') { clearInterval(poll); dr.className = 'drawer on err'; free(); }
+    } catch (e) { st.textContent = 'waiting for the server…'; }
+  }, 2000);
+}
+$('rf').onclick = () => startRebuild(null);
+load();
+})();
+</script>
+</body>
+</html>

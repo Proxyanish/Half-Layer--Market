@@ -1,0 +1,139 @@
+/* The Half Layer – local server link: Refresh button, intraday API, About card.   Developed by Anish Luitel */
+(() => {
+'use strict';
+const HL = window.HL; if (!HL) return;
+const {M, esc} = HL, $ = id => document.getElementById(id);
+const L = HL.live = {ok: false, base: '', token: '', info: null};
+const hs = window.HL_SERVER;
+L.base = hs ? (hs.base || location.origin) : (location.protocol.startsWith('http') ? location.origin : 'http://localhost:8765');
+L.token = (hs && hs.token) || (() => { try { return localStorage.getItem('hl-server-token') || ''; } catch (e) { return ''; } })();
+
+/* ---------------- shared dialog ---------------- */
+HL.modal = function (html, onClick) {
+  const g = $('gmodal'), b = $('gbox'); b.innerHTML = html + '<div class="mcredit">Developed by <b>Anish Luitel</b></div>'; g.classList.add('on');
+  b.onclick = e => { if (e.target.closest('[data-close]')) return HL.closeModal(); if (onClick) onClick(e); };
+  g.onclick = e => { if (e.target === g) HL.closeModal(); };
+  return b;
+};
+HL.closeModal = () => $('gmodal').classList.remove('on');
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('gmodal').classList.contains('on')) HL.closeModal(); });
+const X = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const head = t => `<div class="mh"><b>${t}</b><button class="tb" data-close>${X}</button></div>`;
+
+/* ---------------- talking to the server ---------------- */
+L.api = async (path, opt = {}) => {
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), opt.timeout || 8000);
+  try {
+    const post = opt.method === 'POST';
+    const r = await fetch(L.base + path, {method: opt.method || 'GET', headers: {'Content-Type': 'application/json', ...(post ? {'X-HL-Token': L.token} : {})}, body: opt.body ? JSON.stringify(opt.body) : undefined, signal: ctl.signal});
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j;
+  } finally { clearTimeout(to); }
+};
+L.probe = async () => { try { L.info = await L.api('/api/ping', {timeout: 1800}); L.ok = true; } catch (e) { L.ok = false; L.info = null; } paint(); window.dispatchEvent(new CustomEvent('hl-live', {detail: L.ok})); return L.ok; };
+L.needToken = () => {
+  if (L.token) return true; const t = window.prompt('Paste the token printed in the terminal where serve_dashboard.py is running (pages opened through the server need no token):'); if (!t) return false;
+  L.token = t.trim(); try { localStorage.setItem('hl-server-token', L.token); } catch (e) {} return true;
+};
+L.intraday = async (t, tf) => { const iv = {'1m': '1m', '5m': '5m', '15m': '15m', '1h': '60m'}[tf], j = await L.api(`/api/intraday?t=${encodeURIComponent(t)}&interval=${iv}`, {timeout: 30000}); const bars = j.bars.map(b => ({time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5]})); bars.offset = j.offset; bars.currency = j.currency; return bars; };
+
+/* ---------------- header button ---------------- */
+const ICON = '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>';
+$('hTools').insertAdjacentHTML('beforeend', `<button class="hbtn" id="hRefresh" title="Refresh data, intraday and live mode">${ICON}<span>Refresh</span><i class="dot"></i></button>`);
+function age() { const t = Date.parse(String(M.generated).replace(' ', 'T')); return isFinite(t) ? (Date.now() - t) / 36e5 : null; }
+function paint() {
+  const b = $('hRefresh'); if (!b) return; const a = age(), stale = a != null && a > 20;
+  b.classList.toggle('ok', L.ok); b.classList.toggle('stale', stale && !L.ok);
+  b.title = (L.ok ? 'Local server connected · ' : 'Local server not detected · ') + `data built ${M.generated}` + (a != null ? ` (${a < 1 ? 'less than 1 h' : Math.round(a) + ' h'} ago)` : '');
+}
+$('hRefresh').onclick = () => openRefresh();
+(() => { const br = document.querySelector('.brand'); if (br && location.protocol.startsWith('http') && hs) { br.style.cursor = 'pointer'; br.title = 'Back to the market launcher'; br.onclick = () => { location.href = '/home'; }; } })();
+paint(); if (location.protocol.startsWith('http')) L.probe();           // pages opened straight from disk only probe when you ask (no console noise)
+
+/* ---------------- refresh dialog ---------------- */
+let poll = null;
+async function openRefresh() {
+  await L.probe(); const a = age(), cmd = 'python serve_dashboard.py', url = 'http://localhost:8765';
+  const info = `<div class="kv"><div>Dashboard built</div><div>${esc(M.generated)}${a != null ? ` <span class="sub">(${a < 1 ? '< 1 h' : Math.round(a) + ' h'} ago)</span>` : ''}</div><div>Last price bar</div><div>${esc(M.last)}</div><div>Source</div><div>${esc(M.source)}</div><div>Currency</div><div>${esc(M.currency)}</div></div>`;
+  const body = L.ok ? `${info}<div class="sec">LOCAL SERVER · CONNECTED</div>
+      <div class="sub" style="margin-bottom:8px">Re-runs the notebook in the background (usually well under a minute), then reloads this page with fresh prices, fundamentals and analyst data. Intraday timeframes (1m, 5m, 15m, 1h) and the <b>Live</b> button on the chart are available while the server runs.</div>
+      <label class="chk"><input type="checkbox" id="rfClear" checked> Clear the cache and download everything again</label>
+      <div class="mf" style="justify-content:flex-start;padding:6px 0"><button class="btn on" id="rfGo">Rebuild dashboard now</button><span class="sub" id="rfSt" style="margin-left:12px"></span></div><pre class="log" id="rfLog" style="display:none"></pre>`
+    : `${info}<div class="sec">LOCAL SERVER · NOT RUNNING</div>
+      <div class="sub" style="margin-bottom:8px">A browser cannot download market data by itself, so refreshing needs the small server that ships with the notebook. Start it in the project folder:</div>
+      <pre class="log">${cmd}</pre><div class="sub">then open <code>${url}</code> (the dashboard opens from there). Or refresh manually without the server:</div>
+      <pre class="log">jupyter nbconvert --to notebook --execute --inplace global_market_analysis.ipynb</pre>
+      <div class="mf" style="justify-content:flex-start;padding:6px 0"><button class="btn" id="rfAgain">Check again</button><span class="sub" id="rfSt" style="margin-left:12px"></span></div>`;
+  HL.modal(head('Refresh data') + `<div class="gbody">${body}</div>`, e => {
+    if (e.target.closest('#rfAgain')) { $('rfSt').textContent = 'checking…'; L.probe().then(ok => { if (ok) openRefresh(); else $('rfSt').textContent = 'still not reachable'; }); }
+    else if (e.target.closest('#rfGo')) startRefresh();
+  });
+}
+async function startRefresh() {
+  if (!L.needToken()) return; const st = $('rfSt'), lg = $('rfLog'); $('rfGo').disabled = true; st.textContent = 'starting…'; lg.style.display = 'block';
+  try { await L.api('/api/refresh', {method: 'POST', body: {clear_cache: $('rfClear').checked}}); } catch (e) { st.textContent = e.message; $('rfGo').disabled = false; return; }
+  clearInterval(poll);
+  poll = setInterval(async () => {
+    try {
+      const j = await L.api('/api/refresh/status'); lg.textContent = (j.log || []).slice(-14).join('\n'); lg.scrollTop = lg.scrollHeight;
+      st.textContent = j.state === 'running' ? `running… ${Math.round(j.elapsed)} s` : j.state === 'done' ? 'done, reloading…' : 'failed (see log)';
+      if (j.state === 'done') { clearInterval(poll); setTimeout(() => location.reload(), 1200); }
+      if (j.state === 'error') { clearInterval(poll); $('rfGo').disabled = false; }
+    } catch (e) { st.textContent = 'waiting for the server…'; }
+  }, 2000);
+}
+
+/* ---------------- Add a stock (any Yahoo Finance ticker) ---------------- */
+HL.addStock = function (prefill) {
+  const uni = M.universe || 'global';
+  const row = r => `<div class="asr ${r.ok ? '' : 'bad'}" data-t="${esc(r.t)}"><div><b>${esc(r.t)}</b> ${r.ok ? `<span>${esc(r.name)}</span><em class="mono">${esc([r.exchange, r.currency, r.price != null ? r.price.toLocaleString(undefined, {maximumFractionDigits: 2}) : ''].filter(Boolean).join(' · '))}</em>` : `<em class="neg">${esc(r.error || 'not found')}</em>`}</div>${r.ok ? `<button class="btn on" data-add>Add</button>` : ''}</div>`;
+  let found = {}, list = [], dirty = false, poll = null;
+  const draw = () => {
+    const have = new Set(list.map(x => x.t)), inU = t => !!HL.INST.find(i => i.t === t);
+    return `<div class="gbody"><div class="sub" style="margin-bottom:10px">Type any Yahoo Finance symbol, for example <code>GOOGL</code>, <code>META</code>, <code>TD.TO</code>, <code>7203.T</code> (separate several with commas). Added stocks join <b>every</b> dashboard after a rebuild and get the full treatment: chart, signals, risk, valuation and technical and analyst ratings.</div>
+    <div class="addrow"><input class="tinput" id="asT" placeholder="GOOGL, META …" autocomplete="off" spellcheck="false" value="${esc(prefill || '')}"><button class="btn on" id="asGo">Check</button></div>
+    <div id="asRes"></div><div class="sec">YOUR ADDED STOCKS ${list.length ? '· ' + list.length : ''}</div>
+    <div id="asList">${list.length ? list.map(x => `<span class="chip o" data-t="${esc(x.t)}">${esc(x.name && x.name !== x.t ? x.name + ' · ' : '')}${esc(x.t)} <u data-rm="${esc(x.t)}" title="Remove">✕</u>${inU(x.t) ? '' : ' <em class="mono">pending</em>'}</span>`).join(' ') : '<span class="sub">None yet.</span>'}</div>
+    <div id="asAct" class="${dirty || list.some(x => !inU(x.t)) ? 'on' : ''}"><div class="sec">REBUILD TO SEE THEM</div><div class="sub" style="margin-bottom:8px">Prices are downloaded and every page is recalculated. It usually takes one to three minutes.</div>
+      <div class="mf" style="justify-content:flex-start;padding:4px 0;gap:8px;flex-wrap:wrap"><button class="btn on" id="asRb">Rebuild this dashboard (${esc(uni)})</button><button class="btn" id="asRbAll">Rebuild all dashboards</button><span class="sub" id="asSt"></span></div><pre class="log" id="asLog" style="display:none"></pre></div></div>`;
+  };
+  const open = () => { const b = HL.modal(head('Add a stock') + draw(), onClick); const i = $('asT'); if (i) { i.focus(); i.onkeydown = e => { if (e.key === 'Enter') check(); }; } };
+  async function loadList() { try { const j = await L.api('/api/watchlist'); list = j.watchlist || []; } catch (e) {} }
+  async function check() {
+    const syms = [...new Set($('asT').value.toUpperCase().split(/[\s,;]+/).filter(Boolean))].slice(0, 10), out = $('asRes');
+    if (!syms.length) return; if (!L.ok) { out.innerHTML = notRunning(); return; }
+    out.innerHTML = '<div class="sub">Checking Yahoo Finance…</div>'; found = {};
+    const rs = await Promise.all(syms.map(t => L.api('/api/lookup?t=' + encodeURIComponent(t), {timeout: 25000}).catch(e => ({ok: false, t, error: e.message}))));
+    rs.forEach(r => found[r.t] = r); out.innerHTML = rs.map(r => row(r)).join('') + (rs.filter(r => r.ok).length > 1 ? '<div class="mf" style="justify-content:flex-start;padding:6px 0"><button class="btn on" data-addall>Add all found</button></div>' : '');
+  }
+  const notRunning = () => `<div class="pend"><b>The local server is not running.</b> Adding a stock needs it (a browser cannot download market data alone). Start it with <code>run_server.bat</code>, open <code>http://localhost:8765</code> and try again. Or add the symbol by hand: append a line such as <code>GOOGL,Alphabet,USD</code> to <code>data/watchlist.csv</code> and run the notebook.</div>`;
+  async function save(rows) {
+    if (!L.needToken()) return; try { const j = await L.api('/api/watchlist', {method: 'POST', body: {add: rows.map(r => ({t: r.t, name: r.name, ccy: r.currency}))}}); list = j.watchlist || list; dirty = true; } catch (e) { $('asRes').insertAdjacentHTML('afterbegin', `<div class="sub neg">${esc(e.message)}</div>`); return; }
+    $('gbox').querySelector('.gbody').outerHTML = draw(); $('asT').onkeydown = e => { if (e.key === 'Enter') check(); };
+  }
+  async function rebuild(all) {
+    if (!L.needToken()) return; const st = $('asSt'), lg = $('asLog'); $('asRb').disabled = $('asRbAll').disabled = true; st.textContent = 'starting…'; lg.style.display = 'block';
+    try { await L.api('/api/refresh', {method: 'POST', body: {clear_cache: false, universes: all ? 'all' : [uni]}}); } catch (e) { st.textContent = e.message; $('asRb').disabled = $('asRbAll').disabled = false; return; }
+    clearInterval(poll); poll = setInterval(async () => {
+      try { const j = await L.api('/api/refresh/status'); lg.textContent = (j.log || []).slice(-12).join('\n'); lg.scrollTop = lg.scrollHeight;
+        st.textContent = j.state === 'running' ? `running… ${Math.round(j.elapsed)} s` : j.state === 'done' ? 'done, reloading…' : 'failed (see the log)';
+        if (j.state === 'done') { clearInterval(poll); setTimeout(() => location.reload(), 1000); } if (j.state === 'error') { clearInterval(poll); $('asRb').disabled = $('asRbAll').disabled = false; }
+      } catch (e) { st.textContent = 'waiting for the server…'; }
+    }, 2000);
+  }
+  function onClick(e) {
+    if (e.target.closest('#asGo')) check();
+    else if (e.target.closest('[data-addall]')) save(Object.values(found).filter(r => r.ok));
+    else if (e.target.closest('[data-add]')) { const t = e.target.closest('.asr').dataset.t; save([found[t]]); }
+    else if (e.target.closest('[data-rm]')) { const t = e.target.closest('[data-rm]').dataset.rm; if (!L.needToken()) return; L.api('/api/watchlist', {method: 'POST', body: {remove: [t]}}).then(j => { list = j.watchlist || []; dirty = true; $('gbox').querySelector('.gbody').outerHTML = draw(); $('asT').onkeydown = ev => { if (ev.key === 'Enter') check(); }; }).catch(() => {}); }
+    else if (e.target.closest('#asRb')) rebuild(false); else if (e.target.closest('#asRbAll')) rebuild(true);
+  }
+  L.probe().then(() => (L.ok ? loadList() : null)).then(open);
+};
+
+/* ---------------- About ---------------- */
+HL.about = () => HL.modal(head('About') + `<div class="about"><img src="${esc(document.querySelector('.brand img').src)}" alt="">
+  <h3 class="hl">The Half Layer</h3><div class="sub">Global markets terminal · ${esc(M.universe)} universe</div>
+  <div class="byline2">Developed by <b class="hl">Anish Luitel</b></div>
+  <div class="kv" style="margin-top:14px;text-align:left"><div>Built</div><div>${esc(M.generated)}</div><div>Data</div><div>${esc(M.source)} · to ${esc(M.last)}</div><div>Instruments</div><div>${M.n_assets}</div><div>Currency</div><div>${esc(M.currency)}</div></div>
+  <div class="sub" style="margin-top:12px;font-size:11.5px">Python · yfinance · Plotly · TradingView Lightweight Charts™. For education and research, not financial advice.</div></div>`);
+})();

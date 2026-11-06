@@ -1,0 +1,5 @@
+ticker,shares,cost,date,note
+AAPL,40,155.20,2024-03-04,core holding
+RY.TO,70,128.00,2024-06-03,bank
+7203.T,300,2450,2024-01-22,
+DIS,50,98.50,2024-08-12,outside the universe: downloaded on the next run

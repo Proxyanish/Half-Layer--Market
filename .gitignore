@@ -1,0 +1,8 @@
+# local, personal or generated files
+cache/
+state/
+__pycache__/
+.ipynb_checkpoints/
+*.zip
+data/my_portfolio.csv
+data/watchlist.csv
