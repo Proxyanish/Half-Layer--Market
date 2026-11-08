@@ -110,9 +110,7 @@ document.addEventListener('keydown', e => {
 /* start: locked unless this tab already entered the PIN */
 const start = () => { if (!unlockedNow()) lock(); };
 if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
-document.addEventListener('DOMContentLoaded', () => {
-  const lg = logo(); if (el && lg) el.querySelectorAll('img').forEach(i => { if (!i.getAttribute('src')) i.src = lg; });
-  if (el && el.isConnected && !el.classList.contains('out')) setInert(true);
+function addButton() {
   const host = document.getElementById('hTools') || document.querySelector('.top');
   if (host && !document.getElementById('hLock')) {
     const b = document.createElement('button'); b.type = 'button'; b.id = 'hLock'; b.className = 'hbtn btn'; b.title = 'Lock the dashboard (asks for the PIN again)';
@@ -120,5 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
     b.onclick = () => { try { sessionStorage.removeItem(KEY); } catch (e) {} lock(); };
     if (host.id === 'hTools') host.appendChild(b); else host.insertBefore(b, document.getElementById('rf') || null);
   }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const lg = logo(); if (el && lg) el.querySelectorAll('img').forEach(i => { if (!i.getAttribute('src')) i.src = lg; });
+  if (el && el.isConnected && !el.classList.contains('out')) setInert(true);
+  if (document.querySelector('script.hl-code')) window.addEventListener('hl-booted', addButton); else addButton();   // dashboards: after the app has built its header
 });
 })();

@@ -1,0 +1,59 @@
+# Rebuilds every dashboard each weekday after the US close and publishes the data.
+# The Refresh button of a dashboard opened without the local server downloads it from the "data" branch.
+# Developed by Anish Luitel
+name: Update market data
+
+on:
+  schedule:
+    - cron: "30 22 * * 1-5"      # 22:30 UTC, after the US market close
+  workflow_dispatch:              # lets you run it by hand: Actions tab, "Update market data", "Run workflow"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt nbconvert ipykernel
+
+      - name: Build every dashboard
+        run: |
+          mkdir -p outputs /tmp/nb
+          for u in global canada mega penny; do
+            echo "::group::build $u"
+            HL_UNIVERSE=$u jupyter nbconvert --to notebook --execute \
+              --ExecutePreprocessor.timeout=3000 --ExecutePreprocessor.kernel_name=python3 \
+              --output-dir /tmp/nb --output "run_$u.ipynb" global_market_analysis.ipynb || echo "::warning::$u failed, keeping the last published data"
+            echo "::endgroup::"
+          done
+          ls -la outputs
+
+      - name: Make the data files
+        run: python publish_data.py --out latest
+
+      - name: Publish to the data branch
+        env:
+          PUBLISH_REPO: ${{ vars.DATA_REPO || github.repository }}
+          PUBLISH_TOKEN: ${{ secrets.DATA_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          cd latest
+          git init -q -b data
+          git config user.name "half-layer-bot"
+          git config user.email "half-layer-bot@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Data to $(date -u +%F) (single commit, replaced on every run)"
+          git push --force "https://x-access-token:${PUBLISH_TOKEN}@github.com/${PUBLISH_REPO}.git" data

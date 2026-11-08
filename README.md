@@ -13,6 +13,15 @@ Nine views on the left rail: WORLD · CHART · SIGNALS · SCREEN · RISK · LINK
 `/` jumps to any ticker. The TYPE / REGION filters apply across views. Click any table row or chart point to open it in CHART.
 MIX has a risk dial along the efficient frontier; VALUE has live DCF sliders; TEST toggles the backtest rules. "Explain" hides the plain-English notes.
 
+## Refresh on a computer without the server (shared files)
+A dashboard opened as a plain file cannot talk to Yahoo, but it can download data that was built for it online. The workflow `.github/workflows/update-data.yml` rebuilds all four dashboards every weekday (22:30 UTC, after the US close) on GitHub, turns each into a small gzipped file with `publish_data.py` and publishes them on the `data` branch. In a dashboard opened without the server, **Refresh → Update now** (or the "Newer prices online" bar that appears on open) downloads the file for that dashboard, stores it in the browser (IndexedDB) and reloads, so everything is current: prices, risk, ratings, screens, valuations. **Back to the original data** undoes it. Holdings, alerts and layout are not touched.
+One-time setup in GitHub (the data must be readable without signing in, so the repository that holds the `data` branch must be **public**):
+1. Make the repository public (Settings → General → Danger zone → Change visibility), or create a second empty public repository for the data and in the code repository add the variable `DATA_REPO` (Settings → Secrets and variables → Actions → Variables) = `your-name/that-repo` and the secret `DATA_REPO_TOKEN` = a fine-grained token with Contents write access to it.
+2. Settings → Actions → General → Workflow permissions → **Read and write permissions** → Save.
+3. Actions tab → **Update market data** → **Run workflow** (first run, about 10 to 20 minutes). After that it runs by itself every weekday.
+4. If the data lives somewhere other than `https://raw.githubusercontent.com/Proxyanish/Half-Layer--Market/data/latest`, run `python set_data_url.py https://raw.githubusercontent.com/YOU/REPO/data/latest` (updates the built files and the notebook), or edit `data_url` in the notebook's CONFIG.
+Data is public market data; the PIN does not protect it. Check the first run in the Actions tab.
+
 ## Prices that update by themselves
 With the server running (`run_server.bat`), a dashboard checks its own age when you open it. If a newer trading day should exist and the data is older than the number of hours set in **Refresh** (default 6), a bar appears ("Updating prices"), the notebook rebuilds just that dashboard in the background (about 20 seconds for Global, up to a minute for Mega and Penny) and the page reloads on its own with the new prices. **Not now** skips it; the checkbox in the Refresh dialog turns it off or changes the hours. For prices that move while the page stays open, use **Live** on the chart. Without the server (a file opened straight from disk, or the phone link) nothing can update: prices are frozen at the build time.
 Tip: to have the server always ready, put a shortcut to `run_server.bat` in the Windows Startup folder (press Win+R, type `shell:startup`).

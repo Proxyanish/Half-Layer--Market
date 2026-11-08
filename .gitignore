@@ -6,3 +6,4 @@ __pycache__/
 *.zip
 data/my_portfolio.csv
 data/watchlist.csv
+latest/
