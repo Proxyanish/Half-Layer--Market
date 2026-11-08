@@ -418,3 +418,8 @@ body.imode .panel[data-hk] .plot,body.imode .panel[data-hk] svg{cursor:help}
 .byline{color:var(--mut)}
 
 #ws:fullscreen,#ws:-webkit-full-screen{overflow:auto}
+
+/* ---------- automatic price update bar ---------- */
+.autobar{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);z-index:85;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 24px);padding:9px 12px 9px 16px;border-radius:12px;background:#0B1B44;border:1px solid var(--orange);box-shadow:0 0 30px rgba(255,158,44,.35),0 14px 40px rgba(0,0,0,.55);font:500 12px var(--sans);color:var(--ink)}
+.autobar b{font:700 10px var(--mono);letter-spacing:.2em;color:var(--orange)}.autobar span{color:var(--mut)}.autobar .btn{height:30px;white-space:nowrap}
+.autobar.bad{border-color:var(--red);box-shadow:0 0 30px rgba(255,107,122,.3),0 14px 40px rgba(0,0,0,.55)}.autobar.bad b{color:var(--red)}

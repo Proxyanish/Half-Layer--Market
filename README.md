@@ -13,6 +13,10 @@ Nine views on the left rail: WORLD · CHART · SIGNALS · SCREEN · RISK · LINK
 `/` jumps to any ticker. The TYPE / REGION filters apply across views. Click any table row or chart point to open it in CHART.
 MIX has a risk dial along the efficient frontier; VALUE has live DCF sliders; TEST toggles the backtest rules. "Explain" hides the plain-English notes.
 
+## Prices that update by themselves
+With the server running (`run_server.bat`), a dashboard checks its own age when you open it. If a newer trading day should exist and the data is older than the number of hours set in **Refresh** (default 6), a bar appears ("Updating prices"), the notebook rebuilds just that dashboard in the background (about 20 seconds for Global, up to a minute for Mega and Penny) and the page reloads on its own with the new prices. **Not now** skips it; the checkbox in the Refresh dialog turns it off or changes the hours. For prices that move while the page stays open, use **Live** on the chart. Without the server (a file opened straight from disk, or the phone link) nothing can update: prices are frozen at the build time.
+Tip: to have the server always ready, put a shortcut to `run_server.bat` in the Windows Startup folder (press Win+R, type `shell:startup`).
+
 ## The launcher page (http://localhost:8765/)
 With the server running, the home address now shows a launcher: one card per dashboard (Global, Canada, and any other you build) with a benchmark sparkline, market-regime gauge, 1-month and YTD returns, last price bar and how old the build is. Click a card to open it; click the logo inside a dashboard to come back. **Refresh data** on the launcher rebuilds through the same job as the dashboard's Refresh button. `/home` always shows the launcher, even if only one dashboard exists. "Developed by Anish Luitel" appears on every screen: the signature plate, every dialog, the chart watermark and the chart's bottom bar (also in fullscreen).
 

@@ -47,7 +47,7 @@ function paint() {
 }
 $('hRefresh').onclick = () => openRefresh();
 (() => { const br = document.querySelector('.brand'); if (br && location.protocol.startsWith('http') && hs) { br.style.cursor = 'pointer'; br.title = 'Back to the market launcher'; br.onclick = () => { location.href = '/home'; }; } })();
-paint(); if (location.protocol.startsWith('http')) L.probe();           // pages opened straight from disk only probe when you ask (no console noise)
+paint(); if (location.protocol.startsWith('http')) L.probe().then(ok => { if (ok) setTimeout(autoUpdate, 500); });           // pages opened straight from disk only probe when you ask (no console noise)
 
 /* ---------------- refresh dialog ---------------- */
 let poll = null;
@@ -57,20 +57,22 @@ async function openRefresh() {
   const body = L.ok ? `${info}<div class="sec">LOCAL SERVER · CONNECTED</div>
       <div class="sub" style="margin-bottom:8px">Re-runs the notebook in the background (usually well under a minute), then reloads this page with fresh prices, fundamentals and analyst data. Intraday timeframes (1m, 5m, 15m, 1h) and the <b>Live</b> button on the chart are available while the server runs.</div>
       <label class="chk"><input type="checkbox" id="rfClear" checked> Clear the cache and download everything again</label>
+      <label class="chk"><input type="checkbox" id="rfAuto" ${AU.on ? 'checked' : ''}> Update prices automatically when I open this dashboard and its data is older than <select id="rfHrs" class="tinput" style="width:auto;display:inline-block;padding:2px 6px">${[3, 6, 12, 24].map(h => `<option value="${h}" ${AU.hrs === h ? 'selected' : ''}>${h}</option>`).join('')}</select> hours</label>
       <div class="mf" style="justify-content:flex-start;padding:6px 0"><button class="btn on" id="rfGo">Rebuild dashboard now</button><span class="sub" id="rfSt" style="margin-left:12px"></span></div><pre class="log" id="rfLog" style="display:none"></pre>`
     : `${info}<div class="sec">LOCAL SERVER · NOT RUNNING</div>
       <div class="sub" style="margin-bottom:8px">A browser cannot download market data by itself, so refreshing needs the small server that ships with the notebook. Start it in the project folder:</div>
       <pre class="log">${cmd}</pre><div class="sub">then open <code>${url}</code> (the dashboard opens from there). Or refresh manually without the server:</div>
       <pre class="log">jupyter nbconvert --to notebook --execute --inplace global_market_analysis.ipynb</pre>
       <div class="mf" style="justify-content:flex-start;padding:6px 0"><button class="btn" id="rfAgain">Check again</button><span class="sub" id="rfSt" style="margin-left:12px"></span></div>`;
-  HL.modal(head('Refresh data') + `<div class="gbody">${body}</div>`, e => {
+  const mb = HL.modal(head('Refresh data') + `<div class="gbody">${body}</div>`, e => {
     if (e.target.closest('#rfAgain')) { $('rfSt').textContent = 'checking…'; L.probe().then(ok => { if (ok) openRefresh(); else $('rfSt').textContent = 'still not reachable'; }); }
     else if (e.target.closest('#rfGo')) startRefresh();
   });
+  mb.onchange = e => { if (e.target.id === 'rfAuto') AU.on = e.target.checked; if (e.target.id === 'rfHrs') AU.hrs = +e.target.value; };
 }
 async function startRefresh() {
   if (!L.needToken()) return; const st = $('rfSt'), lg = $('rfLog'); $('rfGo').disabled = true; st.textContent = 'starting…'; lg.style.display = 'block';
-  try { await L.api('/api/refresh', {method: 'POST', body: {clear_cache: $('rfClear').checked}}); } catch (e) { st.textContent = e.message; $('rfGo').disabled = false; return; }
+  try { await L.api('/api/refresh', {method: 'POST', body: {clear_cache: $('rfClear').checked, universes: [M.universe]}}); } catch (e) { st.textContent = e.message; $('rfGo').disabled = false; return; }
   clearInterval(poll);
   poll = setInterval(async () => {
     try {
@@ -79,6 +81,43 @@ async function startRefresh() {
       if (j.state === 'done') { clearInterval(poll); setTimeout(() => location.reload(), 1200); }
       if (j.state === 'error') { clearInterval(poll); $('rfGo').disabled = false; }
     } catch (e) { st.textContent = 'waiting for the server…'; }
+  }, 2000);
+}
+
+/* ---------------- automatic price update when the dashboard is opened (needs the local server) ---------------- */
+const AU = {
+  get on() { try { return localStorage.getItem('hl-autoupdate') !== '0'; } catch (e) { return true; } }, set on(v) { try { localStorage.setItem('hl-autoupdate', v ? '1' : '0'); } catch (e) {} },
+  get hrs() { try { const v = +localStorage.getItem('hl-autoupdate-hrs'); return [3, 6, 12, 24].includes(v) ? v : 6; } catch (e) { return 6; } }, set hrs(v) { try { localStorage.setItem('hl-autoupdate-hrs', String(v)); } catch (e) {} }
+};
+function expectedLast() {                                   // the newest trading day whose close should exist by now (weekdays only; US close is about 21:00 UTC)
+  const d = new Date(); let day = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const wk = x => { const w = x.getUTCDay(); return w >= 1 && w <= 5; };
+  if (!(wk(day) && d.getUTCHours() >= 22)) day = new Date(day.getTime() - 864e5);
+  while (!wk(day)) day = new Date(day.getTime() - 864e5);
+  return day.toISOString().slice(0, 10);
+}
+const needsUpdate = () => { const a = age(); return a != null && String(M.last) < expectedLast() && a > AU.hrs; };
+function autoBar(html, cls) {
+  let b = $('autoBar'); if (!b) { b = document.createElement('div'); b.id = 'autoBar'; document.body.appendChild(b); }
+  b.className = 'autobar ' + (cls || ''); b.innerHTML = html; return b;
+}
+async function autoUpdate() {
+  if (!L.ok || !AU.on || !L.token || !M.universe || !needsUpdate()) return;
+  let st = null; try { st = await L.api('/api/refresh/status'); } catch (e) { return; }
+  const KEY = 'hl-autoupdate-try'; let last = 0; try { last = +sessionStorage.getItem(KEY) || 0; } catch (e) {}
+  if (st.state !== 'running') { if (Date.now() - last < 10 * 60 * 1000) return; try { sessionStorage.setItem(KEY, String(Date.now())); } catch (e) {} }
+  const stop = () => { clearInterval(tm); const b = $('autoBar'); if (b) b.remove(); };
+  let tm = 0, skipped = false;
+  autoBar(`<b>UPDATING PRICES</b><span id="auSt">starting…</span><button class="btn" id="auSkip" type="button">Not now</button>`);
+  $('autoBar').onclick = e => { if (e.target.closest('#auSkip')) { skipped = true; stop(); } };
+  if (st.state !== 'running') { try { await L.api('/api/refresh', {method: 'POST', body: {clear_cache: true, universes: [M.universe]}}); } catch (e) { autoBar(`<b>UPDATE FAILED</b><span>${esc(e.message)}</span><button class="btn" id="auOk" type="button">Close</button>`, 'bad').onclick = () => $('autoBar').remove(); return; } }
+  tm = setInterval(async () => {
+    if (skipped) return;
+    try {
+      const j = await L.api('/api/refresh/status'), el = $('auSt'); if (el) el.textContent = j.state === 'running' ? `downloading and recalculating… ${Math.round(j.elapsed)} s` : j.state === 'done' ? 'done, reloading…' : 'failed';
+      if (j.state === 'done') { clearInterval(tm); setTimeout(() => location.reload(), 600); }
+      else if (j.state === 'error') { clearInterval(tm); autoBar(`<b>UPDATE FAILED</b><span>The rebuild did not finish. Open Refresh to see the log.</span><button class="btn" id="auOk" type="button">Close</button>`, 'bad').onclick = () => $('autoBar').remove(); }
+    } catch (e) { const el = $('auSt'); if (el) el.textContent = 'waiting for the server…'; }
   }, 2000);
 }
 
