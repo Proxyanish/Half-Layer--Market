@@ -50,7 +50,8 @@ jobs:
           PUBLISH_REPO: ${{ vars.DATA_REPO || github.repository }}
           PUBLISH_TOKEN: ${{ secrets.DATA_REPO_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          cd latest
+          mkdir pub && mv latest pub/latest        # the files must sit in a "latest" folder on the data branch
+          cd pub
           git init -q -b data
           git config user.name "half-layer-bot"
           git config user.email "half-layer-bot@users.noreply.github.com"
