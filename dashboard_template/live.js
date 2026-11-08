@@ -72,7 +72,7 @@ async function openRefresh() {
     else if (e.target.closest('#olReset')) olReset();
   });
   if (DU && !L.ok) olCheck();
-  mb.onchange = e => { if (e.target.id === 'rfAuto') AU.on = e.target.checked; if (e.target.id === 'rfHrs') AU.hrs = +e.target.value; };
+  mb.onchange = e => { if (e.target.id === 'rfAuto') AU.on = e.target.checked; if (e.target.id === 'olAuto') AO.on = e.target.checked; if (e.target.id === 'rfHrs') AU.hrs = +e.target.value; };
 }
 async function startRefresh() {
   if (!L.needToken()) return; const st = $('rfSt'), lg = $('rfLog'); $('rfGo').disabled = true; st.textContent = 'starting…'; lg.style.display = 'block';
@@ -127,6 +127,7 @@ async function autoUpdate() {
 
 /* ---------------- online update: newest data published by the daily GitHub build (no server needed) ---------------- */
 const DU = String(window.HL_DATA_URL || '').replace(/\/+$/, '');
+const AO = {get on() { try { return localStorage.getItem('hl-autoonline') !== '0'; } catch (e) { return true; } }, set on(v) { try { localStorage.setItem('hl-autoonline', v ? '1' : '0'); } catch (e) {} }};
 const cmpNewer = m => !!m && (String(m.last) > String(M.last));
 async function olMeta() { const r = await fetch(DU + '/meta.json?v=' + Date.now(), {cache: 'no-store'}); if (!r.ok) throw new Error('HTTP ' + r.status); const j = await r.json(); return (j.dashboards || {})[M.universe] || null; }
 function onlineHtml() {
@@ -135,6 +136,7 @@ function onlineHtml() {
   return `<div class="sec">ONLINE UPDATE · NO SERVER NEEDED</div>
     <div class="sub" style="margin-bottom:8px">Downloads the newest data that the project's daily build published online (a few MB), then reloads this page. It updates <b>everything</b>: prices, risk, ratings, screens and valuations. Needs an internet connection.</div>
     <div class="kv"><div>Prices in this page</div><div>to ${esc(M.last)}${used ? ' <span class="sub">(downloaded)</span>' : ''}</div><div>Newest online</div><div id="olNew">checking…</div></div>
+    <label class="chk"><input type="checkbox" id="olAuto" ${AO.on ? 'checked' : ''}> Update by itself whenever I open this page and newer data is online</label>
     <div class="mf" style="justify-content:flex-start;padding:6px 0;gap:8px;flex-wrap:wrap"><button class="btn on" id="olGo" disabled>Update now</button>${used ? '<button class="btn" id="olReset" type="button">Back to the original data</button>' : ''}<span class="sub" id="olSt"></span></div>`;
 }
 async function olCheck() {
@@ -162,6 +164,11 @@ async function olBanner() {
   if (!DU || L.ok) return; let seen = false; try { seen = sessionStorage.getItem('hl-olbanner') === '1'; } catch (e) {} if (seen) return;
   let m = null; try { m = await olMeta(); } catch (e) { return; } if (!cmpNewer(m)) return;
   try { sessionStorage.setItem('hl-olbanner', '1'); } catch (e) {}
+  if (AO.on) {                                                         // automatic: download, store, reload
+    autoBar(`<b>UPDATING PRICES</b><span id="auSt">to ${esc(m.last)}…</span>`);
+    olGo(t => { const x = $('auSt'); if (x) x.textContent = t; }).catch(err => autoBar(`<b>UPDATE FAILED</b><span>${esc(err.message)}</span><button class="btn" id="auOk" type="button">Close</button>`, 'bad').onclick = () => $('autoBar').remove());
+    return;
+  }
   const b = autoBar(`<b>NEWER PRICES ONLINE</b><span id="auSt">to ${esc(m.last)}</span><button class="btn on" id="olBn" type="button">Update now</button><button class="btn" id="auSkip" type="button">Later</button>`);
   b.onclick = e => {
     if (e.target.closest('#auSkip')) b.remove();

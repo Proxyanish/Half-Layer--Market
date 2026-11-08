@@ -1,5 +1,5 @@
 # Rebuilds every dashboard each weekday after the US close and publishes the data.
-# The Refresh button of a dashboard opened without the local server downloads it from the "data" branch.
+# Publishes the dashboards as a website (GitHub Pages, branch "data") and the data files that the Refresh button of any dashboard downloads.
 # Developed by Anish Luitel
 name: Update market data
 
@@ -42,19 +42,18 @@ jobs:
           done
           ls -la outputs
 
-      - name: Make the data files
-        run: python publish_data.py --out latest
+      - name: Make the website and the data files
+        run: python publish_data.py --out pub --site --pin "${{ vars.PUBLIC_PIN || '1605' }}"
 
       - name: Publish to the data branch
         env:
           PUBLISH_REPO: ${{ vars.DATA_REPO || github.repository }}
           PUBLISH_TOKEN: ${{ secrets.DATA_REPO_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          mkdir pub && mv latest pub/latest        # the files must sit in a "latest" folder on the data branch
           cd pub
           git init -q -b data
           git config user.name "half-layer-bot"
           git config user.email "half-layer-bot@users.noreply.github.com"
           git add -A
-          git commit -q -m "Data to $(date -u +%F) (single commit, replaced on every run)"
+          git commit -q -m "Website and data to $(date -u +%F) (single commit, replaced on every run)"
           git push --force "https://x-access-token:${PUBLISH_TOKEN}@github.com/${PUBLISH_REPO}.git" data
