@@ -4,5 +4,9 @@ scipy
 matplotlib
 plotly
 yfinance
+nbconvert
+nbformat
+nbclient
+ipykernel
 jupyter
 jinja2

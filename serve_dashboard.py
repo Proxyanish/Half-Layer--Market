@@ -33,6 +33,25 @@ JOB = {"state": "idle", "started": None, "finished": None, "log": [], "returncod
 JOB_LOCK = threading.Lock()
 
 
+REQUIRED = ["pandas", "numpy", "scipy", "matplotlib", "plotly", "yfinance", "nbconvert", "nbformat", "nbclient", "ipykernel", "jinja2"]
+
+
+def missing_packages():
+    """Python packages the notebook needs that are not installed (so the Refresh button can say so instead of failing)."""
+    import importlib.util
+    out = []
+    for m in REQUIRED:
+        try:
+            if importlib.util.find_spec(m) is None:
+                out.append(m)
+        except Exception:
+            out.append(m)
+    return out
+
+
+INSTALL_HINT = "python -m pip install -r requirements.txt"
+
+
 def yf_available():
     try:
         import yfinance  # noqa: F401
@@ -100,6 +119,13 @@ def run_refresh(clear_cache, universes=None):
     with JOB_LOCK:
         if JOB["state"] == "running":
             return False
+        miss = missing_packages()
+        if miss:
+            JOB.update(state="error", started=time.time(), finished=time.time(), returncode=1,
+                       log=["Cannot rebuild yet: these Python packages are not installed: " + ", ".join(miss),
+                            "Install them once (in the project folder):  " + INSTALL_HINT,
+                            "Then press Refresh again. (run_server.bat does this for you at the next start.)"])
+            return True
         JOB.update(state="running", started=time.time(), finished=None, log=[], returncode=None)
     todo = universes or known_universes()
     def work():
@@ -111,7 +137,7 @@ def run_refresh(clear_cache, universes=None):
             rc = 0
             for n, u in enumerate(todo, 1):
                 JOB["log"].append(f"=== ({n}/{len(todo)}) building '{u}' ===")
-                cmd = [sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook", "--execute", "--inplace",
+                cmd = [sys.executable, "-m", "nbconvert", "--to", "notebook", "--execute", "--inplace",
                        "--ExecutePreprocessor.timeout=3000", "--ExecutePreprocessor.kernel_name=python3", nb]
                 env = dict(os.environ, HL_UNIVERSE=u)
                 p = subprocess.Popen(cmd, cwd=HERE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
@@ -305,7 +331,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if u.path == "/api/ping":
                 return self.send_json({"ok": True, "version": VERSION, "yfinance": yf_available(), "state_dir": os.path.expanduser(args.state_dir),
-                                       "dashboards": self.dashboards(), "universes": known_universes(), "time": datetime.now().isoformat(timespec="seconds"), "notebook": args.notebook})
+                                       "dashboards": self.dashboards(), "universes": known_universes(), "missing": missing_packages(), "time": datetime.now().isoformat(timespec="seconds"), "notebook": args.notebook})
             if u.path == "/api/dashboards":
                 return self.send_json({"dashboards": [dash_meta(f) for f in self.dashboards()], "notebook": args.notebook})
             if u.path == "/api/lookup":
@@ -419,6 +445,10 @@ def main():
     print(f"  State folder: {os.path.expanduser(args.state_dir)}")
     print(f"  Token (only needed if you open the HTML file directly instead of through this server): {TOKEN}")
     print(f"  yfinance   : {'available' if yf_available() else 'NOT installed -> intraday disabled (pip install yfinance)'}")
+    miss = missing_packages()
+    if miss:
+        print(f"\n  ! Missing Python packages: {', '.join(miss)}")
+        print(f"    The Refresh / Rebuild buttons need them. Install once with:  {INSTALL_HINT}")
     print("  Press Ctrl+C to stop.\n")
     try:
         srv.serve_forever()

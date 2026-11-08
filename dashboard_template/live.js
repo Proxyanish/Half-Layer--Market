@@ -54,7 +54,8 @@ let poll = null;
 async function openRefresh() {
   await L.probe(); const a = age(), cmd = 'python serve_dashboard.py', url = 'http://localhost:8765';
   const info = `<div class="kv"><div>Dashboard built</div><div>${esc(M.generated)}${a != null ? ` <span class="sub">(${a < 1 ? '< 1 h' : Math.round(a) + ' h'} ago)</span>` : ''}</div><div>Last price bar</div><div>${esc(M.last)}</div><div>Source</div><div>${esc(M.source)}</div><div>Currency</div><div>${esc(M.currency)}</div></div>`;
-  const body = L.ok ? `${info}<div class="sec">LOCAL SERVER · CONNECTED</div>
+  const miss = (L.info && L.info.missing) || [], missHtml = miss.length ? `<div class="pend"><b>Python packages missing:</b> ${esc(miss.join(', '))}. Rebuilding cannot run until they are installed. Close the server window, open a Command Prompt in the project folder and run <code>python -m pip install -r requirements.txt</code> (or just start the server again with <code>run_server.bat</code>, which installs them the first time).</div>` : '';
+  const body = L.ok ? `${info}${missHtml}<div class="sec">LOCAL SERVER · CONNECTED</div>
       <div class="sub" style="margin-bottom:8px">Re-runs the notebook in the background (usually well under a minute), then reloads this page with fresh prices, fundamentals and analyst data. Intraday timeframes (1m, 5m, 15m, 1h) and the <b>Live</b> button on the chart are available while the server runs.</div>
       <label class="chk"><input type="checkbox" id="rfClear" checked> Clear the cache and download everything again</label>
       <label class="chk"><input type="checkbox" id="rfAuto" ${AU.on ? 'checked' : ''}> Update prices automatically when I open this dashboard and its data is older than <select id="rfHrs" class="tinput" style="width:auto;display:inline-block;padding:2px 6px">${[3, 6, 12, 24].map(h => `<option value="${h}" ${AU.hrs === h ? 'selected' : ''}>${h}</option>`).join('')}</select> hours</label>
