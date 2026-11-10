@@ -1,11 +1,11 @@
-# Rebuilds every dashboard each weekday after the US close and publishes the data.
+# Rebuilds every dashboard hourly on weekdays (07:47 to 23:47 UTC) and publishes the data.
 # Publishes the dashboards as a website (GitHub Pages, branch "data") and the data files that the Refresh button of any dashboard downloads.
 # Developed by Anish Luitel
 name: Update market data
 
 on:
   schedule:
-    - cron: "30 22 * * 1-5"      # 22:30 UTC, after the US market close
+    - cron: "47 7-23 * * 1-5"    # hourly (at :47, to avoid GitHub's busy top of the hour) from the European morning to after the US close
   workflow_dispatch:              # lets you run it by hand: Actions tab, "Update market data", "Run workflow"
 
 permissions:

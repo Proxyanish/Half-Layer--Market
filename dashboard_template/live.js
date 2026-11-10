@@ -38,14 +38,15 @@ L.intraday = async (t, tf) => { const iv = {'1m': '1m', '5m': '5m', '15m': '15m'
 
 /* ---------------- header button ---------------- */
 const ICON = '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>';
-$('hTools').insertAdjacentHTML('beforeend', `<button class="hbtn" id="hRefresh" title="Refresh data, intraday and live mode">${ICON}<span>Refresh</span><i class="dot"></i></button>`);
+$('hTools').insertAdjacentHTML('beforeend', `<button class="hbtn" id="hRefresh" title="Refresh: get the newest prices (Shift+click for details)">${ICON}<span>Refresh</span><i class="dot"></i></button><button class="hbtn" id="hRefreshSet" title="Refresh details and settings" aria-label="Refresh details and settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.4 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.4-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.2-.8.2-1.2z"/></svg></button>`);
 function age() { const t = Date.parse(String(M.generated).replace(' ', 'T')); return isFinite(t) ? (Date.now() - t) / 36e5 : null; }
 function paint() {
   const b = $('hRefresh'); if (!b) return; const a = age(), stale = a != null && a > 20;
   b.classList.toggle('ok', L.ok); b.classList.toggle('stale', stale && !L.ok);
   b.title = (L.ok ? 'Local server connected · ' : 'Local server not detected · ') + `data built ${M.generated}` + (a != null ? ` (${a < 1 ? 'less than 1 h' : Math.round(a) + ' h'} ago)` : '');
 }
-$('hRefresh').onclick = () => openRefresh();
+$('hRefresh').onclick = e => { if (e.shiftKey) openRefresh(); else quickRefresh(); };
+$('hRefreshSet').onclick = () => openRefresh();
 (() => { const br = document.querySelector('.brand'); if (br && location.protocol.startsWith('http') && hs) { br.style.cursor = 'pointer'; br.title = 'Back to the market launcher'; br.onclick = () => { location.href = '/home'; }; } })();
 paint(); if (location.protocol.startsWith('http')) L.probe().then(ok => setTimeout(ok ? autoUpdate : olBanner, ok ? 500 : 1500)); else setTimeout(olBanner, 2500);           // pages opened straight from disk only probe when you ask (no console noise)
 
@@ -88,9 +89,47 @@ async function startRefresh() {
   }, 2000);
 }
 
+/* ---------------- one-click Refresh ---------------- */
+let rfBusy = false;
+async function serverRefresh(setSt) {                                   // rebuild this dashboard with the local server
+  let st = null; try { st = await L.api('/api/refresh/status'); } catch (e) {}
+  if (!st || st.state !== 'running') await L.api('/api/refresh', {method: 'POST', body: {clear_cache: true, universes: [M.universe]}});
+  return new Promise((res, rej) => {
+    const tm = setInterval(async () => {
+      try {
+        const j = await L.api('/api/refresh/status');
+        setSt(j.state === 'running' ? `downloading and recalculating… ${Math.round(j.elapsed)} s` : j.state === 'done' ? 'done, reloading…' : 'failed');
+        if (j.state === 'done') { clearInterval(tm); setTimeout(() => location.reload(), 500); res({reloading: true}); }
+        else if (j.state === 'error') { clearInterval(tm); rej(new Error((j.log || []).slice(-3).join(' · ') || 'the rebuild failed')); }
+      } catch (e) { setSt('waiting for the server…'); }
+    }, 2000);
+  });
+}
+async function onlineRefresh(setSt) {                                   // download the newest published data
+  setSt('checking the newest data online…'); const m = await olMeta();
+  if (!m) throw new Error('nothing has been published online for this dashboard yet');
+  if (!cmpNewer(m)) return {same: m};
+  await olGo(setSt); return {reloading: true};
+}
+async function quickRefresh() {
+  if (rfBusy) return; rfBusy = true;
+  const say = t => { const x = $('auSt'); if (x) x.textContent = t; };
+  const fail = e => { autoBar(`<b>REFRESH FAILED</b><span>${esc(e.message || e)}</span><button class="btn" id="auDet" type="button">Details</button><button class="btn" id="auOk" type="button">Close</button>`, 'bad').onclick = ev => { if (ev.target.closest('#auDet')) { $('autoBar').remove(); openRefresh(); } else if (ev.target.closest('#auOk')) $('autoBar').remove(); }; };
+  try {
+    autoBar('<b>REFRESHING</b><span id="auSt">starting…</span>');
+    await L.probe(); let r = null;
+    if (L.ok && L.token) {
+      try { r = await serverRefresh(say); }
+      catch (e) { if (!DU) throw e; say('local rebuild failed, using the online data…'); r = await onlineRefresh(say); }
+    } else if (DU) r = await onlineRefresh(say);
+    else { rfBusy = false; $('autoBar').remove(); openRefresh(); return; }
+    if (r && r.same) { const b = autoBar(`<b>ALREADY THE NEWEST</b><span>prices to ${esc(r.same.last)} · built ${esc(r.same.generated_utc || r.same.generated)} UTC</span><button class="btn" id="auOk" type="button">Close</button>`); b.onclick = () => b.remove(); setTimeout(() => { if (b.isConnected) b.remove(); }, 9000); rfBusy = false; }
+  } catch (e) { rfBusy = false; fail(e); }
+}
+
 /* ---------------- automatic price update when the dashboard is opened (needs the local server) ---------------- */
 const AU = {
-  get on() { try { return localStorage.getItem('hl-autoupdate') !== '0'; } catch (e) { return true; } }, set on(v) { try { localStorage.setItem('hl-autoupdate', v ? '1' : '0'); } catch (e) {} },
+  get on() { try { return localStorage.getItem('hl-autoupdate') === '1'; } catch (e) { return false; } }, set on(v) { try { localStorage.setItem('hl-autoupdate', v ? '1' : '0'); } catch (e) {} },
   get hrs() { try { const v = +localStorage.getItem('hl-autoupdate-hrs'); return [3, 6, 12, 24].includes(v) ? v : 6; } catch (e) { return 6; } }, set hrs(v) { try { localStorage.setItem('hl-autoupdate-hrs', String(v)); } catch (e) {} }
 };
 function expectedLast() {                                   // the newest trading day whose close should exist by now (weekdays only; US close is about 21:00 UTC)
@@ -127,8 +166,8 @@ async function autoUpdate() {
 
 /* ---------------- online update: newest data published by the daily GitHub build (no server needed) ---------------- */
 const DU = String(window.HL_DATA_URL || '').replace(/\/+$/, '');
-const AO = {get on() { try { return localStorage.getItem('hl-autoonline') !== '0'; } catch (e) { return true; } }, set on(v) { try { localStorage.setItem('hl-autoonline', v ? '1' : '0'); } catch (e) {} }};
-const cmpNewer = m => !!m && (String(m.last) > String(M.last));
+const AO = {get on() { try { return localStorage.getItem('hl-autoonline') === '1'; } catch (e) { return false; } }, set on(v) { try { localStorage.setItem('hl-autoonline', v ? '1' : '0'); } catch (e) {} }};
+const cmpNewer = m => !!m && (String(m.last) > String(M.last) || (String(m.last) === String(M.last) && String(m.generated_utc || '') > String(M.generated_utc || '')));   // a newer day, or the same day built later (intraday)
 async function olMeta() { const r = await fetch(DU + '/meta.json?v=' + Date.now(), {cache: 'no-store'}); if (!r.ok) throw new Error('HTTP ' + r.status); const j = await r.json(); return (j.dashboards || {})[M.universe] || null; }
 function onlineHtml() {
   if (!DU) return '';
@@ -136,13 +175,13 @@ function onlineHtml() {
   return `<div class="sec">ONLINE UPDATE · NO SERVER NEEDED</div>
     <div class="sub" style="margin-bottom:8px">Downloads the newest data that the project's daily build published online (a few MB), then reloads this page. It updates <b>everything</b>: prices, risk, ratings, screens and valuations. Needs an internet connection.</div>
     <div class="kv"><div>Prices in this page</div><div>to ${esc(M.last)}${used ? ' <span class="sub">(downloaded)</span>' : ''}</div><div>Newest online</div><div id="olNew">checking…</div></div>
-    <label class="chk"><input type="checkbox" id="olAuto" ${AO.on ? 'checked' : ''}> Update by itself whenever I open this page and newer data is online</label>
+    <label class="chk"><input type="checkbox" id="olAuto" ${AO.on ? 'checked' : ''}> Update by itself whenever I open this page and newer data is online (off by default: use the Refresh button instead)</label>
     <div class="mf" style="justify-content:flex-start;padding:6px 0;gap:8px;flex-wrap:wrap"><button class="btn on" id="olGo" disabled>Update now</button>${used ? '<button class="btn" id="olReset" type="button">Back to the original data</button>' : ''}<span class="sub" id="olSt"></span></div>`;
 }
 async function olCheck() {
   const el = $('olNew'), go = $('olGo'); if (!el) return;
   try { const m = await olMeta(); if (!m) { el.textContent = 'not published yet for this dashboard'; return; }
-    el.innerHTML = `prices to ${esc(m.last)} <span class="sub">(built ${esc(m.generated)} UTC)</span>`;
+    el.innerHTML = `prices to ${esc(m.last)} <span class="sub">(built ${esc(m.generated_utc || m.generated)} UTC)</span>`;
     if (cmpNewer(m)) { if (go) go.disabled = false; } else { const t = $('olSt'); if (t) t.textContent = 'You already have the newest prices.'; }
   } catch (e) { el.textContent = 'not reachable: ' + e.message; }
 }
@@ -156,24 +195,16 @@ async function olGo(setSt) {
   st('unpacking…'); const txt = await new Response(new Blob(chunks).stream().pipeThrough(new DecompressionStream('gzip'))).text();
   const head = txt.slice(0, 3000), pick = k => (head.match(new RegExp('"' + k + '":\\s*"([^"]+)"')) || [])[1];
   if (pick('universe') !== M.universe) throw new Error('the downloaded file belongs to a different dashboard');
-  st('saving…'); await HLDB.put({k: M.universe, generated: pick('generated'), last: pick('last'), json: txt, saved: new Date().toISOString()});
+  st('saving…'); await HLDB.put({k: M.universe, generated: pick('generated'), generated_utc: pick('generated_utc'), last: pick('last'), json: txt, saved: new Date().toISOString()});
   st('done, reloading…'); setTimeout(() => location.reload(), 500);
 }
 function olReset() { if (window.HLDB) HLDB.del(M.universe).catch(() => {}).then(() => location.reload()); }
-async function olBanner() {
-  if (!DU || L.ok) return; let seen = false; try { seen = sessionStorage.getItem('hl-olbanner') === '1'; } catch (e) {} if (seen) return;
+async function olBanner() {                                              // only when "update by itself" was switched on
+  if (!DU || L.ok || !AO.on) return; let seen = false; try { seen = sessionStorage.getItem('hl-olbanner') === '1'; } catch (e) {} if (seen) return;
   let m = null; try { m = await olMeta(); } catch (e) { return; } if (!cmpNewer(m)) return;
   try { sessionStorage.setItem('hl-olbanner', '1'); } catch (e) {}
-  if (AO.on) {                                                         // automatic: download, store, reload
-    autoBar(`<b>UPDATING PRICES</b><span id="auSt">to ${esc(m.last)}…</span>`);
-    olGo(t => { const x = $('auSt'); if (x) x.textContent = t; }).catch(err => autoBar(`<b>UPDATE FAILED</b><span>${esc(err.message)}</span><button class="btn" id="auOk" type="button">Close</button>`, 'bad').onclick = () => $('autoBar').remove());
-    return;
-  }
-  const b = autoBar(`<b>NEWER PRICES ONLINE</b><span id="auSt">to ${esc(m.last)}</span><button class="btn on" id="olBn" type="button">Update now</button><button class="btn" id="auSkip" type="button">Later</button>`);
-  b.onclick = e => {
-    if (e.target.closest('#auSkip')) b.remove();
-    else if (e.target.closest('#olBn')) { e.target.disabled = true; olGo(t => { const x = $('auSt'); if (x) x.textContent = t; }).catch(err => { const x = $('auSt'); if (x) x.textContent = err.message; e.target.disabled = false; }); }
-  };
+  autoBar(`<b>UPDATING PRICES</b><span id="auSt">to ${esc(m.last)}…</span>`);
+  olGo(t => { const x = $('auSt'); if (x) x.textContent = t; }).catch(err => autoBar(`<b>UPDATE FAILED</b><span>${esc(err.message)}</span><button class="btn" id="auOk" type="button">Close</button>`, 'bad').onclick = () => $('autoBar').remove());
 }
 
 /* ---------------- Add a stock (any Yahoo Finance ticker) ---------------- */

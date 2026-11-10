@@ -10,8 +10,8 @@ window.HLDB = {get: k => tx('readonly', s => s.get(k)), put: rec => tx('readwrit
 
 const el = document.getElementById('data'), head = el.textContent.slice(0, 3000);
 const pick = k => (head.match(new RegExp('"' + k + '":\\s*"([^"]+)"')) || [])[1] || '';
-const uni = pick('universe') || 'x', gen = pick('generated'), lastBar = pick('last');
-window.HL_EMBEDDED = {universe: uni, generated: gen, last: lastBar};
+const uni = pick('universe') || 'x', gen = pick('generated_utc'), lastBar = pick('last');
+window.HL_EMBEDDED = {universe: uni, generated_utc: gen, last: lastBar};
 
 function run() {
   document.querySelectorAll('script.hl-code').forEach(c => { const s = document.createElement('script'); s.text = c.textContent; document.body.appendChild(s); });
@@ -22,9 +22,9 @@ if (!window.indexedDB) go();
 else {
   setTimeout(go, 4000);                                                     // never wait long for the browser's storage
   HLDB.get(uni).then(rec => {
-    if (rec && typeof rec.json === 'string' && rec.json.charAt(0) === '{' && (String(rec.last) > lastBar || (String(rec.last) === lastBar && String(rec.generated) > gen))) {
+    if (rec && typeof rec.json === 'string' && rec.json.charAt(0) === '{' && (String(rec.last) > lastBar || (String(rec.last) === lastBar && String(rec.generated_utc || '') > gen))) {
       const h = rec.json.slice(0, 3000), u = (h.match(/"universe":\s*"([^"]+)"/) || [])[1];
-      if (u === uni) { el.textContent = rec.json; window.HL_USING_DOWNLOADED = {generated: rec.generated, last: rec.last, saved: rec.saved || ''}; }
+      if (u === uni) { el.textContent = rec.json; window.HL_USING_DOWNLOADED = {generated: rec.generated, generated_utc: rec.generated_utc, last: rec.last, saved: rec.saved || ''}; }
     }
   }).catch(() => {}).then(go);
 }

@@ -40,7 +40,7 @@ for f in sorted(glob.glob(os.path.join(args.outputs, "*_market_dashboard.html"))
         print(f"skip {name}: universe mismatch ({m.get('universe')})"); continue
     gz = gzip.compress(txt, 9, mtime=0)
     open(os.path.join(data_dir, name + ".json.gz"), "wb").write(gz)
-    meta["dashboards"][name] = {"generated": m.get("generated"), "last": m.get("last"), "n_assets": m.get("n_assets"), "bytes": len(gz)}
+    meta["dashboards"][name] = {"generated": m.get("generated"), "generated_utc": m.get("generated_utc"), "last": m.get("last"), "n_assets": m.get("n_assets"), "bytes": len(gz)}
     print(f"{name}: prices to {m.get('last')}, {m.get('n_assets')} instruments, {len(gz) / 1e6:.1f} MB gzipped")
     if args.site:
         page = raw.decode("utf-8")
