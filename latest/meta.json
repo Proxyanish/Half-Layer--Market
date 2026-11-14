@@ -1,0 +1,33 @@
+{
+ "updated": "2026-11-14 01:54",
+ "dashboards": {
+  "canada": {
+   "generated": "2026-11-14 01:52",
+   "generated_utc": "2026-11-14 01:52",
+   "last": "2026-11-13",
+   "n_assets": 29,
+   "bytes": 1112716
+  },
+  "global": {
+   "generated": "2026-11-14 01:52",
+   "generated_utc": "2026-11-14 01:52",
+   "last": "2026-11-13",
+   "n_assets": 35,
+   "bytes": 1411700
+  },
+  "mega": {
+   "generated": "2026-11-14 01:53",
+   "generated_utc": "2026-11-14 01:53",
+   "last": "2026-11-13",
+   "n_assets": 119,
+   "bytes": 4341925
+  },
+  "penny": {
+   "generated": "2026-11-14 01:54",
+   "generated_utc": "2026-11-14 01:54",
+   "last": "2026-11-13",
+   "n_assets": 176,
+   "bytes": 4751871
+  }
+ }
+}
